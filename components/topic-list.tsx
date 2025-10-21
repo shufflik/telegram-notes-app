@@ -1,14 +1,14 @@
 "use client"
 
-import type React from "react"
+import React, { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { useState } from "react"
 import type { Topic } from "@/app/page"
 
 interface TopicListProps {
   topics: Topic[]
   onSelectTopic: (topic: string) => void
   onNavigationChange?: (hasNavigation: boolean, parentPath: string) => void
+  resetNavigation?: boolean
 }
 
 const TOPIC_COLORS: Record<string, string> = {
@@ -167,8 +167,15 @@ function SwipeableTopicItem({
   )
 }
 
-export function TopicList({ topics, onSelectTopic, onNavigationChange }: TopicListProps) {
+export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavigation }: TopicListProps) {
   const [navigationStack, setNavigationStack] = useState<{ topics: Topic[]; path: string }[]>([{ topics, path: "" }])
+
+  // Сброс навигации при возврате в главное меню
+  React.useEffect(() => {
+    if (resetNavigation) {
+      setNavigationStack([{ topics, path: "" }])
+    }
+  }, [resetNavigation, topics])
 
   const currentLevel = navigationStack[navigationStack.length - 1]
 
@@ -185,7 +192,7 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange }: TopicLi
     ]
     setNavigationStack(newStack)
 
-    const hasSubtopics = topic.subtopics && topic.subtopics.length > 0
+    const hasSubtopics = Boolean(topic.subtopics && topic.subtopics.length > 0)
     onNavigationChange?.(hasSubtopics, fullPath)
   }
 
@@ -217,6 +224,15 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange }: TopicLi
 
   const breadcrumbs = navigationStack.map((level) => level.path).filter(Boolean)
 
+  // Функция для умного сокращения пути
+  const truncatePath = (path: string) => {
+    const parts = path.split('/')
+    if (parts.length <= 2) {
+      return path
+    }
+    return `${parts[0]}/../${parts[parts.length - 1]}`
+  }
+
   return (
     <div className="space-y-3">
       {breadcrumbs.length > 0 && (
@@ -230,7 +246,12 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange }: TopicLi
             </svg>
             <span className="text-sm font-medium">Back</span>
           </button>
-          <span className="text-sm text-muted-foreground">{breadcrumbs[breadcrumbs.length - 1].split("/").pop()}</span>
+          <span 
+            className="text-xs sm:text-sm text-muted-foreground truncate" 
+            title={breadcrumbs[breadcrumbs.length - 1]}
+          >
+            {truncatePath(breadcrumbs[breadcrumbs.length - 1])}
+          </span>
         </div>
       )}
 

@@ -250,6 +250,16 @@ export default function NotesApp() {
   const showTopicList = view === "topics" && !searchQuery
   const showFavorites = view === "favorites" && !selectedTopic && !searchQuery
 
+  // Функция для умного сокращения пути в заголовке
+  const truncateTitle = (path: string) => {
+    if (!path) return "My Notes"
+    const parts = path.split('/')
+    if (parts.length <= 2) {
+      return path
+    }
+    return `${parts[0]}/../${parts[parts.length - 1]}`
+  }
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden pt-[10vh]">
       {/* Header */}
@@ -270,7 +280,12 @@ export default function NotesApp() {
                 </svg>
               </button>
             )}
-            <h1 className="text-2xl font-bold text-foreground">{selectedTopic || "My Notes"}</h1>
+            <h1 
+              className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate" 
+              title={selectedTopic || "My Notes"}
+            >
+              {truncateTitle(selectedTopic || "")}
+            </h1>
           </div>
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
@@ -305,7 +320,12 @@ export default function NotesApp() {
       <main className="flex-1 overflow-y-auto px-4 py-6 pb-20">
         {showTopicList && (
           <div className="mb-6">
-            <TopicList topics={topics} onSelectTopic={setSelectedTopic} onNavigationChange={handleNavigationChange} />
+            <TopicList 
+              topics={topics} 
+              onSelectTopic={setSelectedTopic} 
+              onNavigationChange={handleNavigationChange}
+              resetNavigation={selectedTopic === null}
+            />
           </div>
         )}
 
@@ -355,7 +375,10 @@ export default function NotesApp() {
           ) : (
             <div>
               {selectedTopic && (
-                <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide px-1 mb-3">
+                <h2 
+                  className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide px-1 mb-3 break-words" 
+                  title={`Notes in ${selectedTopic}`}
+                >
                   Notes in {selectedTopic.split("/").pop()}
                 </h2>
               )}

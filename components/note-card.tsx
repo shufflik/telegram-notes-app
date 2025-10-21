@@ -37,7 +37,7 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
       className={cn(
         "cursor-pointer transition-all hover:shadow-md active:scale-[0.98] overflow-hidden",
         "border border-border bg-card",
-        "h-[220px] flex flex-col",
+        "h-[200px] flex flex-col",
       )}
     >
       {shouldShowImage && (
@@ -64,7 +64,7 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
       )}
 
       <div className="px-2 pb-2 flex flex-col gap-1 flex-1 min-h-0">
-        <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2">{note.title}</h3>
+        <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-tight line-clamp-1 truncate">{note.title}</h3>
 
         <div className="flex items-center justify-between gap-2 text-xs mt-auto flex-shrink-0">
           <span className="text-muted-foreground">{formatDate(note.date)}</span>
@@ -77,7 +77,17 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
             )}
           </div>
 
-          <span className="font-medium text-primary">{note.topic}</span>
+          <span className="text-[10px] font-medium text-primary truncate" title={note.topic}>
+            {(() => {
+              const displayTopic = note.topic.includes('/') 
+                ? `../${note.topic.split('/').pop()}` 
+                : note.topic;
+              
+              return displayTopic.length > 20 
+                ? `${displayTopic.substring(0, 12)}...` 
+                : displayTopic;
+            })()}
+          </span>
         </div>
       </div>
     </Card>
