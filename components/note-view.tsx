@@ -1,7 +1,6 @@
 "use client"
 
 import type { Note } from "@/app/page"
-import { useEffect } from "react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
@@ -20,14 +19,6 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
     year: "numeric",
   })
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [])
-
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this note?")) {
       onDelete(note.id)
@@ -37,8 +28,8 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in">
-      <div className="fixed inset-0 overflow-y-auto">
-        <div className="min-h-full bg-background animate-in slide-in-from-bottom duration-300">
+      <div className="fixed inset-0 flex flex-col">
+        <div className="flex-1 bg-background animate-in slide-in-from-bottom duration-300 flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
             <div className="flex items-center justify-between px-4 py-4">
@@ -104,7 +95,7 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
           </header>
 
           {/* Content */}
-          <main className="px-4 py-6">
+          <main className="flex-1 overflow-y-auto px-4 py-6">
             {note.image && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-6 bg-muted">
                 <Image src={note.image || "/placeholder.svg"} alt={note.title} fill className="object-cover" />
