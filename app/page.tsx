@@ -251,7 +251,7 @@ export default function NotesApp() {
   const showFavorites = view === "favorites" && !selectedTopic && !searchQuery
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden pt-[10vh]">
       {/* Header */}
       <header className="flex-shrink-0 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 py-4">

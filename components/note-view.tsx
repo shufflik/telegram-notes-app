@@ -26,10 +26,10 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in">
-      <div className="fixed inset-0 flex flex-col">
-        <div className="flex-1 bg-background animate-in slide-in-from-bottom duration-300 flex flex-col">
+        return (
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in">
+            <div className="fixed inset-0 flex flex-col pt-[10vh]">
+              <div className="flex-1 bg-background animate-in slide-in-from-bottom duration-300 flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
             <div className="flex items-center justify-between px-4 py-4">
