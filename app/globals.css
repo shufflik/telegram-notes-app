@@ -136,3 +136,37 @@
     transform: translateX(100%);
   }
 }
+
+/* Telegram WebApp стили */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  /* Убираем скролл для полноэкранного режима в Telegram */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Стили для полноэкранного режима */
+.min-h-screen {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height для мобильных */
+}
+
+/* Убираем скроллбар в Telegram */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Безопасная зона для iPhone */
+@supports (padding: max(0px)) {
+  .pb-20 {
+    padding-bottom: max(5rem, env(safe-area-inset-bottom));
+  }
+}

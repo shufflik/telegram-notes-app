@@ -251,9 +251,9 @@ export default function NotesApp() {
   const showFavorites = view === "favorites" && !selectedTopic && !searchQuery
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
+      <header className="flex-shrink-0 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             {selectedTopic && (
@@ -302,7 +302,7 @@ export default function NotesApp() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-6">
+      <main className="flex-1 overflow-y-auto px-4 py-6 pb-20">
         {showTopicList && (
           <div className="mb-6">
             <TopicList topics={topics} onSelectTopic={setSelectedTopic} onNavigationChange={handleNavigationChange} />
