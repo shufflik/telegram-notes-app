@@ -8,6 +8,14 @@ import { AddNoteButton } from "@/components/add-note-button"
 import { NoteView } from "@/components/note-view"
 import { AddNoteForm } from "@/components/add-note-form"
 
+export type NoteFile = {
+  id: string
+  name: string
+  type: string
+  size: number
+  url: string
+}
+
 export type Note = {
   id: string
   title: string
@@ -18,6 +26,8 @@ export type Note = {
   isFavorite?: boolean
   image?: string
   showPreview?: boolean
+  files?: NoteFile[]
+  link?: string
 }
 
 export type Topic = {
@@ -38,6 +48,7 @@ const SAMPLE_NOTES: Note[] = [
     isFavorite: true,
     image: "/business-meeting-workspace.jpg",
     showPreview: true,
+    link: "https://meet.google.com/abc-defg-hij",
   },
   {
     id: "2",
@@ -61,6 +72,7 @@ const SAMPLE_NOTES: Note[] = [
     isFavorite: true,
     image: "/books-on-desk-learning.jpg",
     showPreview: true,
+    link: "https://www.amazon.com/Design-Everyday-Things-Revised-Expanded/dp/0465050654",
   },
   {
     id: "4",

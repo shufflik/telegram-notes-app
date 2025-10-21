@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { Note, Topic } from "@/app/page"
+import type { Note, Topic, NoteFile } from "@/app/page"
 import Image from "next/image"
 
 type AddNoteFormProps = {
@@ -19,13 +19,14 @@ type AddNoteFormProps = {
 export function AddNoteForm({ onClose, onSubmit, topics, editingNote }: AddNoteFormProps) {
   const [title, setTitle] = useState(editingNote?.title || "")
   const [content, setContent] = useState(editingNote?.content || "")
-  const [link, setLink] = useState("")
+  const [link, setLink] = useState(editingNote?.link || "")
   const [topic, setTopic] = useState(editingNote?.topic || "")
   const [isNewTopic, setIsNewTopic] = useState(false)
   const [videoThumbnail, setVideoThumbnail] = useState<string | null>(
     editingNote?.showPreview && editingNote?.image ? editingNote.image : null,
   )
-  const [showPreview, setShowPreview] = useState(editingNote?.showPreview || true)
+  const [showPreview, setShowPreview] = useState<boolean>(editingNote?.showPreview || true)
+  const [files, setFiles] = useState<NoteFile[]>(editingNote?.files || [])
 
   // Flatten topics for selection
   const flattenTopics = (topics: Topic[], prefix = ""): string[] => {
@@ -40,6 +41,32 @@ export function AddNoteForm({ onClose, onSubmit, topics, editingNote }: AddNoteF
   }
 
   const allTopics = flattenTopics(topics)
+
+  // File handling functions
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files
+    if (!selectedFiles) return
+
+    const newFiles: NoteFile[] = Array.from(selectedFiles).map((file) => ({
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: URL.createObjectURL(file), // In real app, upload to server and get URL
+    }))
+
+    setFiles((prevFiles) => [...prevFiles, ...newFiles])
+  }
+
+  const removeFile = (fileId: string) => {
+    setFiles((prevFiles) => {
+      const fileToRemove = prevFiles.find(f => f.id === fileId)
+      if (fileToRemove) {
+        URL.revokeObjectURL(fileToRemove.url)
+      }
+      return prevFiles.filter(f => f.id !== fileId)
+    })
+  }
 
   // Detect video links and generate preview
   useEffect(() => {
@@ -90,6 +117,8 @@ export function AddNoteForm({ onClose, onSubmit, topics, editingNote }: AddNoteF
       isFavorite: false,
       image: showPreview && videoThumbnail ? videoThumbnail : "/business-meeting-workspace.jpg",
       showPreview: showPreview && !!videoThumbnail,
+      files: files.length > 0 ? files : undefined,
+      link: link.trim() || undefined,
     })
 
     onClose()
@@ -173,6 +202,64 @@ export function AddNoteForm({ onClose, onSubmit, topics, editingNote }: AddNoteF
                 </label>
               </div>
             )}
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <label htmlFor="files" className="block text-sm font-medium text-foreground mb-2">
+              Attach Files
+            </label>
+            <div className="space-y-3">
+              <div className="relative">
+                <input
+                  id="files"
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                />
+                <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                  <div className="text-center">
+                    <svg className="w-8 h-8 text-muted-foreground mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="text-sm text-muted-foreground">Click to upload files</p>
+                    <p className="text-xs text-muted-foreground mt-1">Images, videos, documents, archives</p>
+                  </div>
+                </div>
+              </div>
+              
+              {files.length > 0 && (
+                <div className="space-y-2">
+                  {files.map((file) => (
+                    <div key={file.id} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-card">
+                      <div className="flex-shrink-0 w-8 h-8 rounded bg-muted flex items-center justify-center">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 7.414V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(file.id)}
+                        className="flex-shrink-0 p-1 rounded hover:bg-destructive/10 text-destructive"
+                        title="Remove file"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Topic Selection */}

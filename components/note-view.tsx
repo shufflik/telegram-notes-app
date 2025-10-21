@@ -3,6 +3,7 @@
 import type { Note } from "@/app/page"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { FileDisplay } from "@/components/file-display"
 
 interface NoteViewProps {
   note: Note
@@ -102,11 +103,34 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
               </div>
             )}
 
-            <h1 className="text-3xl font-bold text-foreground mb-4 text-balance">{note.title}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-4 break-words">{note.title}</h1>
 
             {note.content && (
               <div className="prose prose-sm max-w-none mb-6">
-                <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                <p className="text-base text-foreground leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">{note.content}</p>
+              </div>
+            )}
+
+            {note.files && note.files.length > 0 && (
+              <div className="mb-6">
+                <FileDisplay files={note.files} />
+              </div>
+            )}
+
+            {note.link && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-foreground mb-2">Link</h3>
+                <a
+                  href={note.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors text-primary hover:underline"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span className="truncate">{note.link}</span>
+                </a>
               </div>
             )}
 
