@@ -7,28 +7,8 @@ import { NoteCard } from "@/components/note-card"
 import { AddNoteButton } from "@/components/add-note-button"
 import { NoteView } from "@/components/note-view"
 import { AddNoteForm } from "@/components/add-note-form"
-
-export type NoteFile = {
-  id: string
-  name: string
-  type: string
-  size: number
-  url: string
-}
-
-export type Note = {
-  id: string
-  title: string
-  content: string
-  topic: string
-  date: string
-  color?: string
-  isFavorite?: boolean
-  image?: string
-  showPreview?: boolean
-  files?: NoteFile[]
-  link?: string
-}
+import { GlobalLoader } from "@/components/global-loader"
+import type { Note, NoteFile } from "@/lib/api"
 
 export type Topic = {
   name: string
@@ -428,6 +408,9 @@ export default function NotesApp() {
           editingNote={editingNote}
         />
       )}
+      
+      {/* Global Loader for any app-wide loading states */}
+      <GlobalLoader isLoading={false} />
     </div>
   )
 }

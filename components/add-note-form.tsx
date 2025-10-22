@@ -6,7 +6,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import type { Note, Topic, NoteFile } from "@/app/page"
+import type { Note, NoteFile } from "@/lib/api"
+import type { Topic } from "@/app/page"
 import Image from "next/image"
 
 type AddNoteFormProps = {
@@ -219,13 +220,13 @@ export function AddNoteForm({ onClose, onSubmit, topics, editingNote }: AddNoteF
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
                 />
-                <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                <div className="flex items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                   <div className="text-center">
-                    <svg className="w-8 h-8 text-muted-foreground mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-muted-foreground mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
-                    <p className="text-sm text-muted-foreground">Click to upload files</p>
-                    <p className="text-xs text-muted-foreground mt-1">Images, videos, documents, archives</p>
+                    <p className="text-xs text-muted-foreground">Click to upload files</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Images, videos, documents, archives</p>
                   </div>
                 </div>
               </div>

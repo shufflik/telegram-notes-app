@@ -9,6 +9,8 @@
 
 # other
 /.playwright-mcp/
+/.idea
+/.cursor
 
 # production
 /build

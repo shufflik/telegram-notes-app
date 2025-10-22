@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { Card } from "@/components/ui/card"
 import type { Topic } from "@/app/page"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 
 interface TopicListProps {
   topics: Topic[]
@@ -169,6 +170,8 @@ function SwipeableTopicItem({
 
 export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavigation }: TopicListProps) {
   const [navigationStack, setNavigationStack] = useState<{ topics: Topic[]; path: string }[]>([{ topics, path: "" }])
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [topicToDelete, setTopicToDelete] = useState<string>("")
 
   // Сброс навигации при возврате в главное меню
   React.useEffect(() => {
@@ -213,8 +216,16 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavi
   }
 
   const handleDelete = (topicName: string) => {
-    console.log("[v0] Delete topic:", topicName)
-    alert(`Delete topic: ${topicName}`)
+    setTopicToDelete(topicName)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = () => {
+    console.log("[v0] Delete topic:", topicToDelete)
+    // Здесь будет реальная логика удаления темы
+    // alert(`Delete topic: ${topicToDelete}`) // Убираем дублирующий alert
+    setShowDeleteDialog(false)
+    setTopicToDelete("")
   }
 
   const handleEdit = (topicName: string) => {
@@ -276,6 +287,17 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavi
           })}
         </>
       )}
+      
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={confirmDelete}
+        title="Delete Topic"
+        message={`Are you sure you want to delete "${topicToDelete}"? This action cannot be undone and will also delete all notes in this topic.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   )
 }

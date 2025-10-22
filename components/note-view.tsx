@@ -1,9 +1,13 @@
 "use client"
 
-import type { Note } from "@/app/page"
+import type { Note } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { FileDisplay } from "@/components/file-display"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { GlobalLoader } from "@/components/global-loader"
+import { useState } from "react"
+import { notesApi } from "@/lib/api"
 
 interface NoteViewProps {
   note: Note
@@ -14,50 +18,74 @@ interface NoteViewProps {
 }
 
 export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: NoteViewProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showFavoriteDialog, setShowFavoriteDialog] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(note.isFavorite || false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const formattedDate = new Date(note.date).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   })
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this note?")) {
-      onDelete(note.id)
-      onClose()
+  // Функция для API запроса к бекенду
+  const toggleFavoriteOnServer = async (noteId: string, newFavoriteStatus: boolean) => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await notesApi.toggleFavorite(noteId, newFavoriteStatus)
+      
+      if (response.success) {
+        return true
+      } else {
+        throw new Error(response.message || 'Failed to update favorite status')
+      }
+    } catch (err) {
+      console.error('Error updating favorite status:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update favorite status')
+      return false
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const handleDelete = () => {
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = () => {
+    onDelete(note.id)
+    onClose()
+  }
+
+  const handleToggleFavorite = () => {
+    setShowFavoriteDialog(true)
+  }
+
+  const confirmToggleFavorite = async () => {
+    const newFavoriteStatus = !isFavorite
+    const success = await toggleFavoriteOnServer(note.id, newFavoriteStatus)
+    
+    if (success) {
+      // Обновляем локальное состояние только при успешном ответе
+      setIsFavorite(newFavoriteStatus)
+      onToggleFavorite(note.id) // Обновляем глобальное состояние
+      setShowFavoriteDialog(false)
+    }
+    // При ошибке состояние не изменяется и показывается уведомление об ошибке
   }
 
         return (
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-in fade-in">
             <div className="fixed inset-0 flex flex-col pt-[10vh]">
-              <div className="flex-1 bg-background animate-in slide-in-from-bottom duration-300 flex flex-col">
+              <div className="flex-1 bg-background animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[90vh]">
           {/* Header */}
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-lg border-b border-border">
             <div className="flex items-center justify-between px-4 py-4">
-              <button
-                onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close note"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
               <div className="flex items-center gap-6">
-                <button
-                  onClick={() => onEdit(note)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Edit note"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
                 <button
                   onClick={handleDelete}
                   className="text-muted-foreground hover:text-destructive transition-colors"
@@ -73,13 +101,27 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
                   </svg>
                 </button>
                 <button
-                  onClick={() => onToggleFavorite(note.id)}
+                  onClick={() => onEdit(note)}
                   className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={note.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  aria-label="Edit note"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={handleToggleFavorite}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 >
                   <svg
                     className="w-6 h-6"
-                    fill={note.isFavorite ? "currentColor" : "none"}
+                    fill={isFavorite ? "currentColor" : "none"}
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -92,11 +134,20 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
                   </svg>
                 </button>
               </div>
+              <button
+                onClick={onClose}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close note"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </header>
 
           {/* Content */}
-          <main className="flex-1 overflow-y-auto px-4 py-6">
+          <main className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
             {note.image && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-6 bg-muted">
                 <Image src={note.image || "/placeholder.svg"} alt={note.title} fill className="object-cover" />
@@ -164,6 +215,54 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
           </main>
         </div>
       </div>
+      
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={confirmDelete}
+        title="Delete Note"
+        message={`Are you sure you want to delete "${note.title}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+      />
+      
+      <ConfirmDialog
+        isOpen={showFavoriteDialog}
+        onClose={() => setShowFavoriteDialog(false)}
+        onConfirm={confirmToggleFavorite}
+        title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+        message={isFavorite 
+          ? `Are you sure you want to remove "${note.title}" from your favorites?`
+          : `Are you sure you want to add "${note.title}" to your favorites?`
+        }
+        confirmText={isFavorite ? "Remove" : "Add"}
+        cancelText="Cancel"
+        variant="default"
+      />
+      
+      {/* Error Notification */}
+      {error && (
+        <div className="fixed top-4 right-4 z-[70] bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="ml-2 text-destructive-foreground/70 hover:text-destructive-foreground"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Global Loader */}
+      <GlobalLoader isLoading={isLoading} />
     </div>
   )
 }
