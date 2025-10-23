@@ -19,10 +19,18 @@ interface NoteViewProps {
 
 export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: NoteViewProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showFavoriteDialog, setShowFavoriteDialog] = useState(false)
   const [isFavorite, setIsFavorite] = useState(note.isFavorite || false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Функция для показа ошибки с автоматическим закрытием через 3 секунды
+  const showError = (errorMessage: string) => {
+    setError(errorMessage)
+    setTimeout(() => {
+      setError(null)
+    }, 3000)
+  }
 
   const formattedDate = new Date(note.date).toLocaleDateString("en-US", {
     month: "long",
@@ -45,7 +53,7 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
       }
     } catch (err) {
       console.error('Error updating favorite status:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update favorite status')
+      showError(err instanceof Error ? err.message : 'Failed to update favorite status')
       return false
     } finally {
       setIsLoading(false)
@@ -56,16 +64,27 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
     setShowDeleteDialog(true)
   }
 
-  const confirmDelete = () => {
-    onDelete(note.id)
-    onClose()
+  const confirmDelete = async () => {
+    setIsDeleting(true)
+    try {
+      // Вызываем API для удаления заметки
+      const response = await notesApi.delete(note.id)
+      if (response.success) {
+        // Только при успехе вызываем callback для обновления состояния
+        onDelete(note.id)
+        onClose()
+      } else {
+        throw new Error(response.message || "Failed to delete note")
+      }
+    } catch (err) {
+      console.error("Error deleting note:", err)
+      showError(err instanceof Error ? err.message : 'Failed to delete note')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
-  const handleToggleFavorite = () => {
-    setShowFavoriteDialog(true)
-  }
-
-  const confirmToggleFavorite = async () => {
+  const handleToggleFavorite = async () => {
     const newFavoriteStatus = !isFavorite
     const success = await toggleFavoriteOnServer(note.id, newFavoriteStatus)
     
@@ -73,7 +92,6 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
       // Обновляем локальное состояние только при успешном ответе
       setIsFavorite(newFavoriteStatus)
       onToggleFavorite(note.id) // Обновляем глобальное состояние
-      setShowFavoriteDialog(false)
     }
     // При ошибке состояние не изменяется и показывается уведомление об ошибке
   }
@@ -175,12 +193,12 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
                   href={note.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors text-primary hover:underline"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors text-primary hover:underline min-w-0"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                  <span className="truncate">{note.link}</span>
+                  <span className="truncate min-w-0">{note.link}</span>
                 </a>
               </div>
             )}
@@ -218,51 +236,39 @@ export function NoteView({ note, onClose, onToggleFavorite, onEdit, onDelete }: 
       
       <ConfirmDialog
         isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
+        onClose={() => !isDeleting && setShowDeleteDialog(false)}
         onConfirm={confirmDelete}
         title="Delete Note"
         message={`Are you sure you want to delete "${note.title}"? This action cannot be undone.`}
-        confirmText="Delete"
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
         cancelText="Cancel"
         variant="destructive"
       />
       
-      <ConfirmDialog
-        isOpen={showFavoriteDialog}
-        onClose={() => setShowFavoriteDialog(false)}
-        onConfirm={confirmToggleFavorite}
-        title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-        message={isFavorite 
-          ? `Are you sure you want to remove "${note.title}" from your favorites?`
-          : `Are you sure you want to add "${note.title}" to your favorites?`
-        }
-        confirmText={isFavorite ? "Remove" : "Add"}
-        cancelText="Cancel"
-        variant="default"
-      />
-      
       {/* Error Notification */}
       {error && (
-        <div className="fixed top-4 right-4 z-[70] bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-sm font-medium">{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-2 text-destructive-foreground/70 hover:text-destructive-foreground"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <div className="fixed top-[12vh] right-4 z-[100]">
+          <div className="bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </button>
+              <span className="text-sm font-medium">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-2 text-destructive-foreground/70 hover:text-destructive-foreground"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       )}
       
       {/* Global Loader */}
-      <GlobalLoader isLoading={isLoading} />
+      <GlobalLoader isLoading={isLoading || isDeleting} />
     </div>
   )
 }
