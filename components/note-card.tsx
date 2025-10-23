@@ -1,6 +1,6 @@
 "use client"
 
-import type { Note } from "@/app/page"
+import type { Note } from "@/lib/api"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
@@ -14,11 +14,6 @@ interface NoteCardProps {
 export function NoteCard({ note, onClick }: NoteCardProps) {
   const [imageLoading, setImageLoading] = useState(true)
   const [imageError, setImageError] = useState(false)
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-  }
 
   const shouldShowImage = note.showPreview !== false
 
@@ -67,17 +62,8 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
         <h3 className="text-xs sm:text-sm font-semibold text-foreground leading-tight line-clamp-1 truncate">{note.title}</h3>
 
         <div className="flex items-center justify-between gap-2 text-xs mt-auto flex-shrink-0">
-          <span className="text-muted-foreground">{formatDate(note.date)}</span>
-
-          <div className="flex-shrink-0">
-            {note.isFavorite && (
-              <svg className="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            )}
-          </div>
-
-          <span className="text-[10px] font-medium text-primary truncate" title={note.topic}>
+          {/* Слева: topic name */}
+          <span className="text-[10px] font-medium text-primary truncate flex-1" title={note.topic}>
             {(() => {
               const displayTopic = note.topic.includes('/') 
                 ? `../${note.topic.split('/').pop()}` 
@@ -88,6 +74,15 @@ export function NoteCard({ note, onClick }: NoteCardProps) {
                 : displayTopic;
             })()}
           </span>
+
+          {/* Справа: иконка favorite (если есть) */}
+          <div className="flex-shrink-0 w-4 h-4">
+            {note.isFavorite && (
+              <svg className="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            )}
+          </div>
         </div>
       </div>
     </Card>
