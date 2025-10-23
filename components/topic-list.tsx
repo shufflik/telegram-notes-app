@@ -4,12 +4,19 @@ import React, { useState } from "react"
 import { Card } from "@/components/ui/card"
 import type { Topic } from "@/app/page"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { EditTopicForm } from "@/components/edit-topic-form"
+import { GlobalLoader } from "@/components/global-loader"
+import { topicsApi } from "@/lib/api"
 
 interface TopicListProps {
   topics: Topic[]
   onSelectTopic: (topic: string) => void
   onNavigationChange?: (hasNavigation: boolean, parentPath: string) => void
   resetNavigation?: boolean
+  onTopicChange?: () => void // Callback для обновления данных после изменений
+  onTopicRename?: (oldPath: string, newName: string) => Promise<void> // Callback для переименования топика
+  onTopicDelete?: (topicPath: string) => Promise<void> // Callback для удаления топика
+  onTopicError?: (error: string) => void // Callback для показа ошибок
 }
 
 const TOPIC_COLORS: Record<string, string> = {
@@ -168,10 +175,14 @@ function SwipeableTopicItem({
   )
 }
 
-export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavigation }: TopicListProps) {
+export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavigation, onTopicChange, onTopicRename, onTopicDelete, onTopicError }: TopicListProps) {
   const [navigationStack, setNavigationStack] = useState<{ topics: Topic[]; path: string }[]>([{ topics, path: "" }])
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [topicToDelete, setTopicToDelete] = useState<string>("")
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [topicToEdit, setTopicToEdit] = useState<{ name: string; path: string } | null>(null)
+  const [isRenaming, setIsRenaming] = useState(false)
 
   // Сброс навигации при возврате в главное меню
   React.useEffect(() => {
@@ -220,17 +231,62 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavi
     setShowDeleteDialog(true)
   }
 
-  const confirmDelete = () => {
-    console.log("[v0] Delete topic:", topicToDelete)
-    // Здесь будет реальная логика удаления темы
-    // alert(`Delete topic: ${topicToDelete}`) // Убираем дублирующий alert
-    setShowDeleteDialog(false)
-    setTopicToDelete("")
+  const confirmDelete = async () => {
+    setIsDeleting(true)
+    try {
+      // Сначала вызываем API
+      const response = await topicsApi.delete(topicToDelete)
+      if (response.success) {
+        // Только при успехе обновляем локальное состояние
+        if (onTopicDelete) {
+          await onTopicDelete(topicToDelete)
+        }
+        console.log("Topic deleted successfully:", topicToDelete)
+        onTopicChange?.() // Обновляем данные
+        setShowDeleteDialog(false)
+        setTopicToDelete("")
+      } else {
+        console.error("Failed to delete topic:", response.message)
+        onTopicError?.(response.message || "Failed to delete topic")
+      }
+    } catch (error) {
+      console.error("Error deleting topic:", error)
+      onTopicError?.(error instanceof Error ? error.message : 'Unknown error')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
-  const handleEdit = (topicName: string) => {
-    console.log("[v0] Edit topic:", topicName)
-    alert(`Edit topic: ${topicName}`)
+  const handleEdit = (topicPath: string) => {
+    const topicName = topicPath.split('/').pop() || topicPath
+    setTopicToEdit({ name: topicName, path: topicPath })
+    setShowEditDialog(true)
+  }
+
+  const handleSaveTopic = async (oldPath: string, newName: string) => {
+    setIsRenaming(true)
+    try {
+      // Сначала вызываем API
+      const response = await topicsApi.rename(oldPath, newName)
+      if (response.success) {
+        // Только при успехе обновляем локальное состояние
+        if (onTopicRename) {
+          await onTopicRename(oldPath, newName)
+        }
+        console.log("Topic renamed successfully:", oldPath, "->", newName)
+        onTopicChange?.() // Обновляем данные
+        setShowEditDialog(false)
+        setTopicToEdit(null)
+      } else {
+        throw new Error(response.message || "Failed to rename topic")
+      }
+    } catch (error) {
+      console.error("Error renaming topic:", error)
+      onTopicError?.(error instanceof Error ? error.message : 'Unknown error')
+      throw error
+    } finally {
+      setIsRenaming(false)
+    }
   }
 
   const breadcrumbs = navigationStack.map((level) => level.path).filter(Boolean)
@@ -298,6 +354,22 @@ export function TopicList({ topics, onSelectTopic, onNavigationChange, resetNavi
         cancelText="Cancel"
         variant="destructive"
       />
+
+      {topicToEdit && (
+        <EditTopicForm
+          isOpen={showEditDialog}
+          onClose={() => {
+            setShowEditDialog(false)
+            setTopicToEdit(null)
+          }}
+          onSave={handleSaveTopic}
+          topicName={topicToEdit.name}
+          topicPath={topicToEdit.path}
+        />
+      )}
+
+      {/* Global Loader */}
+      <GlobalLoader isLoading={isDeleting || isRenaming} />
     </div>
   )
 }

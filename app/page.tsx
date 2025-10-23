@@ -130,6 +130,15 @@ export default function NotesApp() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [hasSubtopics, setHasSubtopics] = useState(true)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
+  const [topicError, setTopicError] = useState<string | null>(null)
+
+  // Функция для показа ошибки с автоматическим закрытием через 3 секунды
+  const showTopicError = (error: string) => {
+    setTopicError(error)
+    setTimeout(() => {
+      setTopicError(null)
+    }, 3000)
+  }
 
   const topics = useMemo(() => {
     const buildTopicTree = (): Topic[] => {
@@ -235,6 +244,64 @@ export default function NotesApp() {
     setShowAddForm(true)
   }
 
+  const handleTopicChange = () => {
+    // Принудительно обновляем список топиков
+    // В реальном приложении здесь был бы вызов API для получения обновленных данных
+    console.log("Topic changed, refreshing data...")
+    // Поскольку мы используем локальное состояние, просто перерендерим компонент
+    setNotes(prevNotes => [...prevNotes])
+  }
+
+  const handleTopicRename = async (oldPath: string, newName: string) => {
+    try {
+      // Обновляем все заметки с этим топиком
+      setNotes(prevNotes => 
+        prevNotes.map(note => {
+          if (note.topic === oldPath) {
+            // Создаем новый путь топика
+            const pathParts = oldPath.split('/')
+            pathParts[pathParts.length - 1] = newName
+            const newPath = pathParts.join('/')
+            return { ...note, topic: newPath }
+          }
+          return note
+        })
+      )
+      
+      // Если текущий выбранный топик был переименован, обновляем его
+      if (selectedTopic === oldPath) {
+        const pathParts = oldPath.split('/')
+        pathParts[pathParts.length - 1] = newName
+        const newPath = pathParts.join('/')
+        setSelectedTopic(newPath)
+      }
+      
+      console.log("Topic renamed successfully:", oldPath, "->", newName)
+    } catch (error) {
+      console.error("Error renaming topic:", error)
+      showTopicError(error instanceof Error ? error.message : 'Failed to rename topic')
+      throw error
+    }
+  }
+
+  const handleTopicDelete = async (topicPath: string) => {
+    try {
+      // Удаляем все заметки с этим топиком
+      setNotes(prevNotes => prevNotes.filter(note => note.topic !== topicPath))
+      
+      // Если текущий выбранный топик был удален, сбрасываем выбор
+      if (selectedTopic === topicPath) {
+        setSelectedTopic(null)
+      }
+      
+      console.log("Topic deleted successfully:", topicPath)
+    } catch (error) {
+      console.error("Error deleting topic:", error)
+      showTopicError(error instanceof Error ? error.message : 'Failed to delete topic')
+      throw error
+    }
+  }
+
   const handleNavigationChange = (hasNav: boolean, parentPath: string) => {
     setHasSubtopics(hasNav)
   }
@@ -254,6 +321,28 @@ export default function NotesApp() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden pt-[10vh]">
+      {/* Topic Error Notification - поверх всех компонентов */}
+      {topicError && (
+        <div className="fixed top-[12vh] right-4 z-[100]">
+          <div className="bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm font-medium">{topicError}</span>
+              <button
+                onClick={() => setTopicError(null)}
+                className="ml-2 text-destructive-foreground/70 hover:text-destructive-foreground"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex-shrink-0 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 py-4">
@@ -279,6 +368,7 @@ export default function NotesApp() {
               {truncateTitle(selectedTopic || "")}
             </h1>
           </div>
+
           <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
           {!selectedTopic && !searchQuery && (
@@ -317,6 +407,10 @@ export default function NotesApp() {
               onSelectTopic={setSelectedTopic} 
               onNavigationChange={handleNavigationChange}
               resetNavigation={selectedTopic === null}
+              onTopicChange={handleTopicChange}
+              onTopicRename={handleTopicRename}
+              onTopicDelete={handleTopicDelete}
+              onTopicError={showTopicError}
             />
           </div>
         )}
